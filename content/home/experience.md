@@ -18,27 +18,45 @@ date_format = "Jan 2006"
 #   Leave `date_end` empty if it's your current employer.
 #   Begin/end multi-line descriptions with 3 quotes `"""`.
 [[experience]]
-  title = "CEO"
-  company = "GenCoin"
-  company_url = ""
-  location = "California"
-  date_start = "2017-01-01"
+  title = "Manager, Benchmarking and Data Insights"
+  company = "National Association of Corporate Directors"
+  company_url = "www.nacdonline.org"
+  location = "Virginia"
+  date_start = "2017-02-01"
   date_end = ""
-  description = """
-  Responsibilities include:
-  
-  * Analysing
-  * Modelling
-  * Deploying
-  """
+  # description = """
+  # Responsibilities include:
+  # 
+  # * Analysing
+  # * Modelling
+  # * Deploying
+  #"""
 
 [[experience]]
-  title = "Professor"
-  company = "University X"
-  company_url = ""
-  location = "California"
-  date_start = "2016-01-01"
-  date_end = "2016-12-31"
-  description = """Taught electronic engineering and researched semiconductor physics."""
+  title = "Senior Research Analyst"
+  company = "National Association of Corporate Directors"
+  company_url = "www.nacdonline.org"
+  location = "Washington, DC"
+  date_start = "2015-02-01"
+  date_end = "2017-02-01"
+  #description = """Taught electronic engineering and researched semiconductor physics."""
+
+[[experience]]
+  title = "Research Analyst"
+  company = "National Association of Corporate Directors"
+  company_url = "www.nacdonline.org"
+  location = "Washington, DC"
+  date_start = "2014-05-01"
+  date_end = "2015-02-01"
+
+[[experience]]
+  title = "Research Associate"
+  company = "The Advisory Board Company"
+  # company_url = "www.nacdonline.org"
+  location = "Washington, DC"
+  date_start = "2013-02-01"
+  date_end = "2013-12-01"
+
+
 
 +++
