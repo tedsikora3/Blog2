@@ -23,13 +23,13 @@ subtitle = ""
 [[feature]]
   icon = "chart-line"
   icon_pack = "fas"
-  name = "Statistics"
-  description = "100%"  
+  name = "Data visualization"
+  description = "80%"  
   
 [[feature]]
-  icon = "camera-retro"
+  icon = "align-left"
   icon_pack = "fas"
-  name = "Photography"
-  description = "10%"
+  name = "Questionnaire Design"
+  description = "90%"
 
 +++
