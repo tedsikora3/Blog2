@@ -56,7 +56,7 @@ time_format = "3:04 PM"
 
 # Office hours: use `<br>` to insert a line break, or set to "" to remove office hours
 #office_hours = """Monday 10:00 to 13:00<br>
-                  Wednesday 09:00 to 10:00"""
+                  #Wednesday 09:00 to 10:00"""
 
 # Enter an optional link for booking appointments (e.g. calendly.com).
 #appointment_url = "https://calendly.com"
@@ -86,11 +86,11 @@ time_format = "3:04 PM"
 #   1: Google Maps
 #   2: OpenStreetMap (Mapnik)
 #   3: OpenStreetMap (Mapbox)
-map = 0
-map_api_key = ""
-latitude = "37.4275"
-longitude = "-122.1697"
-zoom = 15
+#map = 0
+#map_api_key = ""
+#latitude = "37.4275"
+#longitude = "-122.1697"
+#zoom = 15
 
 ############################
 ## Plugins                ##
