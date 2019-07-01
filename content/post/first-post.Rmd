@@ -1,0 +1,13 @@
+---
+title: First Post
+author: Ted Sikora
+date: '2019-06-30'
+slug: first-post
+categories: []
+tags: []
+image:
+  caption: ''
+  focal_point: ''
+---
+
+This is my first post.
