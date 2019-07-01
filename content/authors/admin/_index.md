@@ -1,8 +1,7 @@
 ---
 authors:
 - admin
-bio: My research interests include distributed robotics, mobile computing and programmable
-  matter.
+bio: My professional interests include statistics, programming, questionnaire design, and corporate governance.
 education:
   courses:
   - course: Graduate Certificate in Survey Design and Data Analysis
