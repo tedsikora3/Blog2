@@ -1,0 +1,24 @@
+---
+title: Fourier Transform Experiments
+author: Ted Sikora
+date: '2019-07-20'
+slug: fourier-transform-experiments
+categories: []
+tags: []
+image:
+  caption: ''
+  focal_point: ''
+---
+
+
+
+<blockquote>
+<p>“Good, he did not have enough imagination to become a mathematician.”</p>
+<p>- David Hilbert</p>
+</blockquote>
+<p>Such was singular mathematician David Hilbert’s reaction to the news that one of his students had dropped out of one of his courses to study poetry. I have to confess that I empathize quite a bit with the student in this anecdote. The history of mathematics replete with giants that seem to possess a super-human ability to conjure up beautiful mental tapestries of angles, lines, patterns and colors at the mere glance of an equation. Giants aside, sitting in math classes growing up, a lesson that boiled down to wrote memorization for most seemed to consistently produce revelation after revelation for a few.</p>
+<p>Today, the proliferation of free online educational resources provides anyone with an internet connection the chance to access some amazingly talented teachers; teachers whom I have to believe were once students of the later type. For these hyper-talented individuals it is not sufficient to merely aquire a deep understanding of sophisticated mathematical concepts. Instead, they have gone on to learn visualization tools and techniques that enable them to provide the rest of us the opportunity to see explicitly what they seem to grasp intuitively; math is beautiful.</p>
+<p>One resource that helped me view mathematics in a new way was the YouTube channel <em>3Blue1Brown</em>. This post derives inspiration from <a href="https://www.youtube.com/watch?v=spUNpyF58BY">this video</a> in particular, which provides an introduction the Fourier Transform. I wanted to explore some of the consepts in the video, so I created a function <em>tb1b</em>, which takes as parameters an expression and a “wrapping frequency”. I could then modify these inputs to experiment and gain new insight.</p>
+<pre class="r"><code>tb1b(cos(2*(2*pi)*t), w=0.5 )</code></pre>
+<p><img src="/post/2019-07-20-fourier-transform-experiments_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>As is the case with most of my posts thus far, this is just a sketch I was inspired to produce at sometime across the past two or three years to practice R, and I hope to build on this in the future. If you’ve made it this far and aren’t binge watching <em>3Blue1Brown’s</em> content, check out <a href="https://eater.net/quaternions">this article</a>, containing interactive videos that are sure to blow you away.</p>

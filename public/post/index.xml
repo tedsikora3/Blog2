@@ -6,27 +6,48 @@
     <description>Recent content in Posts on TSIII</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 30 Jun 2019 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 21 Jul 2019 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
-      <title>First Post</title>
-      <link>/post/first-post/</link>
-      <pubDate>Sun, 30 Jun 2019 00:00:00 +0000</pubDate>
+      <title>A look at the NFL Draft, Continued</title>
+      <link>/post/a-look-at-the-nfl-draft-continued/</link>
+      <pubDate>Sun, 21 Jul 2019 00:00:00 +0000</pubDate>
       
-      <guid>/post/first-post/</guid>
-      <description>This is my first post.</description>
+      <guid>/post/a-look-at-the-nfl-draft-continued/</guid>
+      <description>In a previous post, I used a function that I created to efficiently gather data from Pro Football Reference, created and cleaned the dataset, and created visualizations to began investigation of a few simple trends. For example, as illustrated in the graph below, quarterbacks appear to tend to come off the board in the very beginning and the very end of the draft.
+In the visualization below, I explore this trend further.</description>
     </item>
     
     <item>
-      <title>Academic: the website builder for Hugo</title>
-      <link>/post/getting-started/</link>
-      <pubDate>Wed, 20 Apr 2016 00:00:00 +0000</pubDate>
+      <title>Fourier Transform Experiments</title>
+      <link>/post/fourier-transform-experiments/</link>
+      <pubDate>Sat, 20 Jul 2019 00:00:00 +0000</pubDate>
       
-      <guid>/post/getting-started/</guid>
-      <description>Create a beautifully simple website in under 10 minutes.</description>
+      <guid>/post/fourier-transform-experiments/</guid>
+      <description>“Good, he did not have enough imagination to become a mathematician.”
+- David Hilbert
+ Such was singular mathematician David Hilbert’s reaction to the news that one of his students had dropped out of one of his courses to study poetry. I have to confess that I empathize quite a bit with the student in this anecdote. The history of mathematics replete with giants that seem to possess a super-human ability to conjure up beautiful mental tapestries of angles, lines, patterns and colors at the mere glance of an equation.</description>
+    </item>
+    
+    <item>
+      <title>A look at the NFL Draft</title>
+      <link>/post/a-look-at-the-nfl-draft/</link>
+      <pubDate>Tue, 09 Jul 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/post/a-look-at-the-nfl-draft/</guid>
+      <description>Though this blog is fairly new experiment, I have been working with data for several years now. I have a backlog of various experiments I have conducted across the past few years that were undertaken purely to satisfy my own curiousity. Back in 2018, I was watching the NFL draft, and I was curious about the broader tendencies, so I pulled some historical NFL Draft data from pro-football-reference.com. This post represents an update of that previous experiment.</description>
+    </item>
+    
+    <item>
+      <title>Playing it by Ear - An Exploration of IMSLP Data: Part One</title>
+      <link>/post/first-post/first-post/</link>
+      <pubDate>Sun, 30 Jun 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/post/first-post/first-post/</guid>
+      <description>While trying my hand at some classical guitar music one day, I stumbled across the IMSLP/Petrucci Music Library, owned and run by Project Petrucci LLC. It seems to be an excellent source for hundreds of thousands of public domain scores and other works. These works are helpfully organized into lists and tables, and I was inspired to explore some of this information. I’ve pulled from a list of the works of Wolfgang Amadeus Mozart, and created the variable moz, a dataframe that contains 766 observations of 8 variables:</description>
     </item>
     
   </channel>

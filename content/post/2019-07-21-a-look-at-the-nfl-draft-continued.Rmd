@@ -1,0 +1,115 @@
+---
+title: A look at the NFL Draft, Continued
+author: Ted Sikora
+date: '2019-07-21'
+slug: a-look-at-the-nfl-draft-continued
+categories: []
+tags: []
+image:
+  caption: ''
+  focal_point: ''
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(scales)
+library(rvest)
+library(xml2)
+library(cowplot)
+library(ggiraph)
+df <- readRDS("/Users/Ted/Desktop/Blog2/file.rds")
+nms <- c("Lazarius Levingston", "Greg Romeus", "Jeremy Beal", "Ifeadi Odenigbo")
+df[df$Position=="DL" & df$Player %in% nms, c("Position")] <- "DE"
+
+nms <- c("Ricky Elmore", "Dylan Donahue")
+df[df$Position=="DL" & df$Player %in% nms, c("Position")] <- "LB"
+
+nms <- c("Zachary Williams","Philip Blake","Jason Slowey", "Weston Richburg", "Matt Paradis")
+df[df$Position=="OL" & df$Player %in% nms, c("Position")] <- "C"
+
+nms <- c("Andrew Jackson", "Edmund Kugbila", "Demetrius Rhaney", "Robert Griffin", "William Campbell", "Eric Herman", "Trai Turner", "Brandon Linder", "Brandon Thomas", "Kadeem Edwards", "David Yankey", "Jon Halapio", "Corey Levin")
+df[df$Position=="OL" & df$Player %in% nms, c("Position")] <- "G"
+
+nms <- c("Demarcus Love","Johnny Culbreath", "Zebrie Sanders","Nick Mondek", "Justin Anderson","Marcel Jones", "Andrew Datko","Brennan Williams", 
+         "David Quessenberry","Reid Fragel", "Carter Bykowski","Morgan Moses", "Michael Schofield","Dakota Dozier", "Wesley Johnson","Garrett Scott", 
+         "Laurent Duvernay-Tardif", "Tavon Rooks", "Mitchell Van Dyk","Ulrick John", "Seantrel Henderson","Anthony Morris")
+df[df$Position=="OL" & df$Player %in% nms, c("Position")] <- "T"
+
+df[df$Position == "S"  , c("Position")] <- "DB"  
+df[df$Position == "CB" , c("Position")] <- "DB"
+df[df$Position == "OLB", c("Position")] <- "LB"
+df[df$Position == "ILB", c("Position")] <- "LB"
+```
+
+In a previous post, I used a function that I created to efficiently gather data from [Pro Football Reference](https://www.pro-football-reference.com/), created and cleaned the dataset, and created visualizations to began investigation of a few simple trends. For example, as illustrated in the graph below, quarterbacks appear to tend to come off the board in the very beginning and the very end of the draft.
+
+```{r, echo = FALSE,fig.height=3.75}
+df %>% 
+  select(Round, Position) %>% 
+  filter(Position == "QB") %>% 
+  group_by(Round) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x= Round, y = n)) +
+  geom_col(width = 0.6, fill="#440044") +
+  geom_text(aes(label=n), vjust=1, nudge_y=-1, color="#EEEEEE", fontface="bold") +
+  scale_x_continuous(breaks = seq(1:7)) +
+  scale_y_continuous(breaks=seq(0,70,10), expand = expand_scale(mult = c(0,0.05))) +
+  labs(title="Number of Quarterbacks Drafted, by Round", subtitle = "(Since 1994)", caption = "Data Source: Pro Football Reference") +
+  theme(plot.subtitle = element_text(size = 11, hjust = 0.5),
+        plot.margin = margin(r=50, l=50),
+        axis.title.x = element_text(size=11, margin = margin(b=1)),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+  
+```
+
+In the visualization below, I explore this trend further. The y-axis indicates the draft pick used to select a given QB, decending from the first pick to the last pick of the draft. The x-axis indicates the year of the Draft. Each QB selected with a draft pick from 1997 to 2017 is marked with a point. The color of these points varies on a scale to indicate the number of touchdown passes of a given QB has thrown over the course of his career. You can hover your cursor over a point to reveal the name of the player in question.
+
+```{r, fig.height=30, fig.width=7, echo=FALSE}
+
+my_gg <- df %>% 
+  select(Yr, Round, Pick, Team, Player, Position, Pass_TD) %>% 
+  filter(Position == "QB", !is.na(Pass_TD), Yr < 2018, Yr > 1997 ) %>% 
+  mutate(Player = str_replace_all(Player, "'", "")) %>% 
+  ggplot(aes(x= Yr, y=Pick)) +
+  geom_point_interactive(aes(tooltip = Player, data_id = Player, color = Pass_TD), size = 2.1) +
+  scale_color_viridis_c("Career Passing TDs") +
+  scale_x_continuous(breaks = 1997:2017, position = "top") +
+  scale_y_reverse(breaks=seq(1,256,32), minor_breaks = seq(1,256,1), expand = expand_scale(mult = c(0.0025,0.0025))) +
+  labs(title="Passing Touchdowns, by Draft Year and Pick", 
+       subtitle = "(1997-2017)", 
+       x="Draft Year",
+       y="Draft Pick",
+       caption = "Data Source: Pro Football Reference") +
+  guides(color = guide_colorbar(title.position = "top")) +
+  theme(plot.subtitle = element_text(size = 11, hjust = 0.5),
+        panel.grid.major.y = element_line(size = rel(0.8), color = "gray25"), 
+        panel.grid.minor.y = element_line(size = rel(0.15), color = "gray25"),
+        axis.title.x = element_text(size=11, margin = margin(b=1)),
+        axis.text.x = element_text(size= 9, angle = 45, hjust = 1, vjust = 1),
+        axis.text.x.top  = element_text(size= 9, angle = 90, hjust = 1, vjust = 0.5),
+        axis.line.x.top  = element_blank(),
+        #axis.title.y = element_blank(),
+        #axis.line.y = element_blank(),
+        #axis.text.y = element_blank(),
+        #axis.ticks.y = element_blank(),
+        legend.position = "top",
+        legend.justification = "center",
+        legend.key.width = unit(1,"cm")
+        )
+
+girafe(code = print(my_gg), width_svg = 7, height_svg = 22 )
+```
+
+As I reviewed this visualization, a few things struck me as interesting:
+
+ - As a Packer fan, I was expecting Aaron Rodger's infamous draft night wait to jump out at me more. Instead, the bright yellow dot representing the selection of Drew Brees at the end of the first round a few years prior steals my attention.
+ - The only yellow points are Peyton Manning, Drew Brees, and Tom Brady, way down at pick 199. These three have maintained excellence over long careers; while some of today's best might catch them some day, Brady, at least, continues to run up the score.
+ - Apart from Brady, there are few real stand outs in the mid to late rounds. Exceptions include Matt Hasselbeck, Ryan Fitzpatrick, and, most recently, Russell WIlson.
+
+
+
+
+

@@ -1,0 +1,342 @@
+---
+title: A look at the NFL Draft
+author: Ted Sikora
+date: '2019-07-09'
+slug: a-look-at-the-nfl-draft
+categories: []
+tags: []
+image:
+  caption: ''
+  focal_point: ''
+---
+
+
+
+<p>Though this blog is fairly new experiment, I have been working with data for several years now. I have a backlog of various experiments I have conducted across the past few years that were undertaken purely to satisfy my own curiousity. Back in 2018, I was watching the NFL draft, and I was curious about the broader tendencies, so I pulled some historical NFL Draft data from pro-football-reference.com. This post represents an update of that previous experiment.</p>
+<div id="data-acquisition" class="section level2">
+<h2>Data Acquisition</h2>
+<p>To acquire a data set that I could explore, I created the function <strong>draft(year)</strong>, which takes a year as an input and outputs the data for that year’s draft class from Pro Football Reference. I then wrapped that function in another function called <strong>draftm(from,to)</strong>, which applies the <strong>draft(year)</strong> function to a range of years determined by inputs to its “from” and “to” arguments.</p>
+<p>I use this function to pull data ranging from 1994, when the draft was shortened to seven rounds for the first time, to 2019. Obviously the players just drafted this year will not have any statistics, so they will have to be excluded from some analysis, but this still represents more or less a quarter century’s worth of data, which should be sufficient to pick up on some recent trends. In fact, given how the game has changed over the years, going back too much further would likely produce diminishing returns.</p>
+<p>Here is a summary of the resulting data set:</p>
+<pre><code>## &#39;data.frame&#39;:    6554 obs. of  29 variables:
+##  $ Yr          : num  1994 1994 1994 1994 1994 ...
+##  $ Round       : num  1 1 1 1 1 1 1 1 1 1 ...
+##  $ Pick        : num  1 2 3 4 5 6 7 8 9 10 ...
+##  $ Team        : chr  &quot;CIN&quot; &quot;IND&quot; &quot;WAS&quot; &quot;NWE&quot; ...
+##  $ Player      : chr  &quot;Dan Wilkinson&quot; &quot;Marshall Faulk HOF&quot; &quot;Heath Shuler&quot; &quot;Willie McGinest&quot; ...
+##  $ Position    : chr  &quot;DT&quot; &quot;RB&quot; &quot;QB&quot; &quot;DE&quot; ...
+##  $ Age         : num  21 21 22 22 24 22 22 21 22 20 ...
+##  $ LastYr      : num  2006 2005 1997 2008 1996 ...
+##  $ AP1         : num  0 3 0 0 0 0 1 0 0 1 ...
+##  $ PB          : num  0 7 0 2 0 1 4 3 0 1 ...
+##  $ St          : num  12 11 2 12 0 6 14 12 4 7 ...
+##  $ CarAV       : num  60 133 6 75 4 51 88 76 29 46 ...
+##  $ DrAV        : num  14 51 6 66 4 39 88 22 13 21 ...
+##  $ G           : num  195 176 29 212 29 130 208 206 102 121 ...
+##  $ Pass_Cmp    : num  0 0 292 0 0 ...
+##  $ Pass_Att    : num  0 2 593 0 0 ...
+##  $ Pass_Yds    : num  0 0 3691 0 0 ...
+##  $ Pass_TD     : num  0 0 15 0 0 113 0 0 0 0 ...
+##  $ Pass_Int    : num  0 0 33 0 0 129 0 0 0 0 ...
+##  $ Rush_Att    : num  0 2836 67 0 0 ...
+##  $ Rush_Yds    : num  0 12279 198 0 0 ...
+##  $ RushTD      : num  0 100 1 0 0 5 0 0 0 0 ...
+##  $ Rec         : num  0 767 0 0 0 2 0 0 0 0 ...
+##  $ RecYds      : num  0 6875 0 0 0 ...
+##  $ RecTD       : num  0 36 0 0 0 0 0 0 0 0 ...
+##  $ Def_Solo    : num  298 9 NA 583 49 7 510 306 314 478 ...
+##  $ Def_Int     : num  5 NA NA 5 1 NA NA 3 14 2 ...
+##  $ Def_Sk      : num  54.5 NA NA 86 4 NA 89.5 44 1 36 ...
+##  $ College/Univ: chr  &quot;Ohio St.&quot; &quot;San Diego St.&quot; &quot;Tennessee&quot; &quot;USC&quot; ...</code></pre>
+</div>
+<div id="cleaning" class="section level2">
+<h2>Cleaning</h2>
+<p>In a few years starting with the 2011 season, a small number of players are listed simply as “OL” (i.e, offensive lineman) or “DL” (i.e., defensive lineman) as opposted to more specific position designations such as “C”, “G”, “T”, or “DE” (For Center, Guard, Tackle, and Defensive End, respectfully). Since these more specific positions are used nearly everywhere else in the data set, I decided to take the time to look slightly more deeply into these cases, predominantly utilizing information available in the player profiles on information <em>Pro Football Reference</em> itself, to replace these more generic positions with more specific ones.</p>
+<pre class="r"><code>nms &lt;- c(&quot;Lazarius Levingston&quot;, &quot;Greg Romeus&quot;, &quot;Jeremy Beal&quot;, &quot;Ifeadi Odenigbo&quot;)
+df[df$Position==&quot;DL&quot; &amp; df$Player %in% nms, c(&quot;Position&quot;)] &lt;- &quot;DE&quot;
+
+nms &lt;- c(&quot;Ricky Elmore&quot;, &quot;Dylan Donahue&quot;)
+df[df$Position==&quot;DL&quot; &amp; df$Player %in% nms, c(&quot;Position&quot;)] &lt;- &quot;LB&quot;
+
+nms &lt;- c(&quot;Zachary Williams&quot;,&quot;Philip Blake&quot;,&quot;Jason Slowey&quot;, &quot;Weston Richburg&quot;, &quot;Matt Paradis&quot;)
+df[df$Position==&quot;OL&quot; &amp; df$Player %in% nms, c(&quot;Position&quot;)] &lt;- &quot;C&quot;
+
+nms &lt;- c(&quot;Andrew Jackson&quot;, &quot;Edmund Kugbila&quot;, &quot;Demetrius Rhaney&quot;, &quot;Robert Griffin&quot;, &quot;William Campbell&quot;, &quot;Eric Herman&quot;, &quot;Trai Turner&quot;, &quot;Brandon Linder&quot;, &quot;Brandon Thomas&quot;, &quot;Kadeem Edwards&quot;, &quot;David Yankey&quot;, &quot;Jon Halapio&quot;, &quot;Corey Levin&quot;)
+df[df$Position==&quot;OL&quot; &amp; df$Player %in% nms, c(&quot;Position&quot;)] &lt;- &quot;G&quot;
+
+nms &lt;- c(&quot;Demarcus Love&quot;,          &quot;Johnny Culbreath&quot;, 
+         &quot;Zebrie Sanders&quot;,         &quot;Nick Mondek&quot;, 
+         &quot;Justin Anderson&quot;,        &quot;Marcel Jones&quot;, 
+         &quot;Andrew Datko&quot;,           &quot;Brennan Williams&quot;, 
+         &quot;David Quessenberry&quot;,     &quot;Reid Fragel&quot;, 
+         &quot;Carter Bykowski&quot;,        &quot;Morgan Moses&quot;, 
+         &quot;Michael Schofield&quot;,       &quot;Dakota Dozier&quot;, 
+         &quot;Wesley Johnson&quot;,          &quot;Garrett Scott&quot;, 
+         &quot;Laurent Duvernay-Tardif&quot;, &quot;Tavon Rooks&quot;, 
+         &quot;Mitchell Van Dyk&quot;,        &quot;Ulrick John&quot;, 
+         &quot;Seantrel Henderson&quot;,      &quot;Anthony Morris&quot;)
+df[df$Position==&quot;OL&quot; &amp; df$Player %in% nms, c(&quot;Position&quot;)] &lt;- &quot;T&quot;</code></pre>
+<p>On the other hand, while the vast majority of players are simply rendered “LB” (Linebacker) or “DB” (Defensive Back), a small group are listed as “OLB”, “ILB”, “S” or “CB”. There are certianly distinctive aspects to these positions. For example, a true “shut-down” corner is one of the more rare and highly valued positions, up there with QBs and Left Tackles. Since I only seek to make general observations, however, I opt to replace the more specific designations with the more general in this instance.</p>
+<pre class="r"><code>df[df$Position == &quot;S&quot;  , c(&quot;Position&quot;)] &lt;- &quot;DB&quot;  
+df[df$Position == &quot;CB&quot; , c(&quot;Position&quot;)] &lt;- &quot;DB&quot;
+df[df$Position == &quot;OLB&quot;, c(&quot;Position&quot;)] &lt;- &quot;LB&quot;
+df[df$Position == &quot;ILB&quot;, c(&quot;Position&quot;)] &lt;- &quot;LB&quot;</code></pre>
+<p>Finally, I notice that while there is not a variable for those that have gone on to appear in the Pro Football Hall of Fame, the names in the <strong>Player</strong> variable reflect this honor with the suffix, “HOF”. I create a variable based on this fact.</p>
+<pre class="r"><code>df &lt;- df %&gt;% mutate(HOF = str_detect(Player,&quot;HOF&quot;))</code></pre>
+<p>Here is a sample of this data frame as is currently stands.</p>
+<pre class="r"><code>head(df) %&gt;% knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Yr</th>
+<th align="right">Round</th>
+<th align="right">Pick</th>
+<th align="left">Team</th>
+<th align="left">Player</th>
+<th align="left">Position</th>
+<th align="right">Age</th>
+<th align="right">LastYr</th>
+<th align="right">AP1</th>
+<th align="right">PB</th>
+<th align="right">St</th>
+<th align="right">CarAV</th>
+<th align="right">DrAV</th>
+<th align="right">G</th>
+<th align="right">Pass_Cmp</th>
+<th align="right">Pass_Att</th>
+<th align="right">Pass_Yds</th>
+<th align="right">Pass_TD</th>
+<th align="right">Pass_Int</th>
+<th align="right">Rush_Att</th>
+<th align="right">Rush_Yds</th>
+<th align="right">RushTD</th>
+<th align="right">Rec</th>
+<th align="right">RecYds</th>
+<th align="right">RecTD</th>
+<th align="right">Def_Solo</th>
+<th align="right">Def_Int</th>
+<th align="right">Def_Sk</th>
+<th align="left">College/Univ</th>
+<th align="left">HOF</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1994</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="left">CIN</td>
+<td align="left">Dan Wilkinson</td>
+<td align="left">DT</td>
+<td align="right">21</td>
+<td align="right">2006</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">12</td>
+<td align="right">60</td>
+<td align="right">14</td>
+<td align="right">195</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">298</td>
+<td align="right">5</td>
+<td align="right">54.5</td>
+<td align="left">Ohio St.</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="right">1994</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="left">IND</td>
+<td align="left">Marshall Faulk HOF</td>
+<td align="left">RB</td>
+<td align="right">21</td>
+<td align="right">2005</td>
+<td align="right">3</td>
+<td align="right">7</td>
+<td align="right">11</td>
+<td align="right">133</td>
+<td align="right">51</td>
+<td align="right">176</td>
+<td align="right">0</td>
+<td align="right">2</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">2836</td>
+<td align="right">12279</td>
+<td align="right">100</td>
+<td align="right">767</td>
+<td align="right">6875</td>
+<td align="right">36</td>
+<td align="right">9</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="left">San Diego St.</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="odd">
+<td align="right">1994</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="left">WAS</td>
+<td align="left">Heath Shuler</td>
+<td align="left">QB</td>
+<td align="right">22</td>
+<td align="right">1997</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">2</td>
+<td align="right">6</td>
+<td align="right">6</td>
+<td align="right">29</td>
+<td align="right">292</td>
+<td align="right">593</td>
+<td align="right">3691</td>
+<td align="right">15</td>
+<td align="right">33</td>
+<td align="right">67</td>
+<td align="right">198</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="left">Tennessee</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="right">1994</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="left">NWE</td>
+<td align="left">Willie McGinest</td>
+<td align="left">DE</td>
+<td align="right">22</td>
+<td align="right">2008</td>
+<td align="right">0</td>
+<td align="right">2</td>
+<td align="right">12</td>
+<td align="right">75</td>
+<td align="right">66</td>
+<td align="right">212</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">583</td>
+<td align="right">5</td>
+<td align="right">86.0</td>
+<td align="left">USC</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="right">1994</td>
+<td align="right">1</td>
+<td align="right">5</td>
+<td align="left">IND</td>
+<td align="left">Trev Alberts</td>
+<td align="left">LB</td>
+<td align="right">24</td>
+<td align="right">1996</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">29</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">49</td>
+<td align="right">1</td>
+<td align="right">4.0</td>
+<td align="left">Nebraska</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="right">1994</td>
+<td align="right">1</td>
+<td align="right">6</td>
+<td align="left">TAM</td>
+<td align="left">Trent Dilfer</td>
+<td align="left">QB</td>
+<td align="right">22</td>
+<td align="right">2007</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">6</td>
+<td align="right">51</td>
+<td align="right">39</td>
+<td align="right">130</td>
+<td align="right">1759</td>
+<td align="right">3172</td>
+<td align="right">20518</td>
+<td align="right">113</td>
+<td align="right">129</td>
+<td align="right">248</td>
+<td align="right">853</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">-6</td>
+<td align="right">0</td>
+<td align="right">7</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="left">Fresno St.</td>
+<td align="left">FALSE</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="explorationvisualization" class="section level2">
+<h2>Exploration/Visualization</h2>
+<p>I start out by getting my bearings by seeing the overall drafting tendencies at each position. For the sake of this particular comparison, I group certian positions together:</p>
+<ul>
+<li>Tackles, guards and centers are temporarily grouped back together under “OLine”,</li>
+<li>Defensive tackles, nose tackles, and defensive ends are grouped together under “DLine”,</li>
+<li>Running backs and full backs are grouped together under “Backs”</li>
+<li>Kickers, Punters, and Long Snappers are grouped together under “Special Teams”</li>
+</ul>
+<p>The results are illustrated in the graph below.</p>
+<p><img src="/post/2019-07-09-a-look-at-the-nfl-draft_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>It did surprise me that so few special teams specialists seem to be acquired through the draft, to the extent that I was prompted to look at a few other sources to perform a bit of a sanity check.</p>
+<p><img src="/post/2019-07-09-a-look-at-the-nfl-draft_files/figure-html/unnamed-chunk-10-1.png" width="768" /></p>
+<p>On the other hand, I was not surprised to see that defensive backs were the most commonly drafted position. Some defensive sets call for five or even six DBs to be on the field at once. Additionally, these players are often some of the fastest athletes available, so they can often contribute quickly in special teams roles. It appears that many teams shift their focus to this position group in the later rounds, presumably as other needs are met.</p>
+<p><img src="/post/2019-07-09-a-look-at-the-nfl-draft_files/figure-html/unnamed-chunk-11-1.png" width="552" /></p>
+<p>Meanwhile the quarterbacks and tackles share similar pattern, with players drafted at these positions predominantly going in the first, sixth, and seventh rounds. My interpretation of this trend is that since these positions require unique skills and physical abilities, teams are willing to shell out first round money to acquire the best prospects for starting roles. There are likely few individuals in a given year that check all of the boxes, so it is rare for such a player to fall very far (though it obviously happens). So if you are in the market, by round two, you’ve likely got your man. Interest does not peak again until the later rounds is when teams try to shore up these roles with servicable back ups.</p>
+<p><img src="/post/2019-07-09-a-look-at-the-nfl-draft_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p><img src="/post/2019-07-09-a-look-at-the-nfl-draft_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+</div>
+<div id="conclusion" class="section level1">
+<h1>Conclusion</h1>
+<p>In this post, I have gathered and cleaned the data set I intend to use to explore the NFL draft. I have also started to explore the data, investigating high-level patterns and trends. This exercise has already been fruitful, however, as it has validated some of my preconsieved notions about broader draft tendencies, but also produced new insight regarding how special teams specialists are acquired.</p>
+<p>This is a fine start, but I still have many questions I’d like to investigate. For example, how effective is this process? Is it working? I will look into this and other questions in future posts.</p>
+</div>

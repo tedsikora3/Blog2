@@ -5,7 +5,7 @@ headless = true  # This file represents a page section.
 active = true  # Activate this widget? true/false
 weight = 10  # Order that this section will appear.
 
-title = "TSIII"
+#title = "TSIII"
 
 # Hero image (optional). Enter filename of an image in the `static/img/` folder.
 #hero_media = "hero-academic.png"
@@ -48,7 +48,4 @@ title = "TSIII"
 #   label = '<a id="academic-release" href="https://sourcethemes.com/academic/updates" data-repo="gcushen/hugo-academic">Latest release <!-- V --></a>'
 +++
 
-**Welcome to Ted Sikora's personal website**
-
-By **Ted Sikora** 
-
+**Welcome**

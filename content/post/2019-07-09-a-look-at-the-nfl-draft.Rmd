@@ -1,0 +1,252 @@
+---
+title: A look at the NFL Draft
+author: Ted Sikora
+date: '2019-07-09'
+slug: a-look-at-the-nfl-draft
+categories: []
+tags: []
+image:
+  caption: ''
+  focal_point: ''
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(scales)
+library(rvest)
+library(xml2)
+library(cowplot)
+library(ggiraph)
+```
+
+Though this blog is fairly new experiment, I have been working with data for several years now. I have a backlog of various experiments I have conducted across the past few years that were undertaken purely to satisfy my own curiousity. Back in 2018, I was watching the NFL draft, and I was curious about the broader tendencies, so I pulled some historical NFL Draft data from pro-football-reference.com. This post represents an update of that previous experiment.
+
+##Data Acquisition
+
+To acquire a data set that I could explore, I created the function __draft(year)__, which takes a year as an input and outputs the data for that year's draft class from Pro Football Reference. I then wrapped that function in another function called __draftm(from,to)__, which applies the __draft(year)__ function to a range of years determined by inputs to its "from" and "to" arguments.
+
+```{r, echo=FALSE}
+draft <- function(yr){
+  url <- sprintf("https://www.pro-football-reference.com/years/%d/draft.htm", yr) 
+  temp <- read_html(url) %>% 
+    html_nodes("#drafts") %>% 
+    html_table(header = FALSE) %>% 
+    .[[1]] %>% 
+    .[-c(1,2),]  %>% 
+    `colnames<-`(c('Round', 'Pick', 'Team', 'Player', 'Position', 'Age', 'LastYr', 'AP1', 'PB', 'St', 'CarAV', 'DrAV', 'G', 'Pass_Cmp', 'Pass_Att', 'Pass_Yds', 'Pass_TD', 'Pass_Int', 'Rush_Att', 'Rush_Yds','RushTD', 'Rec', 'RecYds', 'RecTD', 'Def_Solo', 'Def_Int', 'Def_Sk', 'College/Univ','College Stats')) 
+  temp <- temp[str_detect(temp$Round,"[:digit:]"),]
+  temp$Yr <- yr 
+  temp <- temp %>% select(Yr, everything())
+  temp
+}
+
+draftm <- function(from, to){
+  yrs <- seq(from, to)
+  temp <- map(yrs, draft)
+  temp <- map_df(seq_along(yrs), ~temp[[.]])
+  temp <- mutate_at(temp, vars(c('Yr','Round', 'Pick', 'Age','LastYr', 'AP1', 'PB', 'St', 'CarAV', 'DrAV', 'G', 'Pass_Cmp', 'Pass_Att', 'Pass_Yds', 'Pass_TD', 'Pass_Int', 'Rush_Att', 'Rush_Yds','RushTD', 'Rec', 'RecYds', 'RecTD', 'Def_Solo', 'Def_Int', 'Def_Sk')), as.numeric)
+  temp <- select(temp, -`College Stats`)
+}
+```
+
+I use this function to pull data ranging from 1994, when the draft was shortened to seven rounds for the first time, to 2019. Obviously the players just drafted this year will not have any statistics, so they will have to be excluded from some analysis, but this still represents more or less a quarter century's worth of data, which should be sufficient to pick up on some recent trends. In fact, given how the game has changed over the years, going back too much further would likely produce diminishing returns.
+
+```{r, include=FALSE}
+#df <- draftm(1994,2019)
+df <- readRDS("/Users/Ted/Desktop/Blog2/file.rds")
+```
+
+Here is a summary of the resulting data set:
+
+```{r, echo=FALSE}
+str(df) 
+```
+
+##Cleaning
+
+In a few years starting with the 2011 season, a small number of players are listed simply as "OL" (i.e, offensive lineman) or "DL" (i.e., defensive lineman) as opposted to more specific position designations such as "C", "G", "T", or "DE" (For Center, Guard, Tackle, and Defensive End, respectfully). Since these more specific positions are used nearly everywhere else in the data set, I decided to take the time to look slightly more deeply into these cases, predominantly utilizing information available in the player profiles on information _Pro Football Reference_ itself, to replace these more generic positions with more specific ones.
+
+```{r}
+nms <- c("Lazarius Levingston", "Greg Romeus", "Jeremy Beal", "Ifeadi Odenigbo")
+df[df$Position=="DL" & df$Player %in% nms, c("Position")] <- "DE"
+
+nms <- c("Ricky Elmore", "Dylan Donahue")
+df[df$Position=="DL" & df$Player %in% nms, c("Position")] <- "LB"
+
+nms <- c("Zachary Williams","Philip Blake","Jason Slowey", "Weston Richburg", "Matt Paradis")
+df[df$Position=="OL" & df$Player %in% nms, c("Position")] <- "C"
+
+nms <- c("Andrew Jackson", "Edmund Kugbila", "Demetrius Rhaney", "Robert Griffin", "William Campbell", "Eric Herman", "Trai Turner", "Brandon Linder", "Brandon Thomas", "Kadeem Edwards", "David Yankey", "Jon Halapio", "Corey Levin")
+df[df$Position=="OL" & df$Player %in% nms, c("Position")] <- "G"
+
+nms <- c("Demarcus Love",          "Johnny Culbreath", 
+         "Zebrie Sanders",         "Nick Mondek", 
+         "Justin Anderson",        "Marcel Jones", 
+         "Andrew Datko",           "Brennan Williams", 
+         "David Quessenberry",     "Reid Fragel", 
+         "Carter Bykowski",        "Morgan Moses", 
+         "Michael Schofield",       "Dakota Dozier", 
+         "Wesley Johnson",          "Garrett Scott", 
+         "Laurent Duvernay-Tardif", "Tavon Rooks", 
+         "Mitchell Van Dyk",        "Ulrick John", 
+         "Seantrel Henderson",      "Anthony Morris")
+df[df$Position=="OL" & df$Player %in% nms, c("Position")] <- "T"
+```
+
+On the other hand, while the vast majority of players are simply rendered "LB" (Linebacker) or "DB" (Defensive Back), a small group are listed as "OLB", "ILB", "S" or "CB". There are certianly distinctive aspects to these positions. For example, a true "shut-down" corner is one of the more rare and highly valued positions, up there with QBs and Left Tackles. Since I only seek to make general observations, however, I opt to replace the more specific designations with the more general in this instance.
+
+```{r}
+df[df$Position == "S"  , c("Position")] <- "DB"  
+df[df$Position == "CB" , c("Position")] <- "DB"
+df[df$Position == "OLB", c("Position")] <- "LB"
+df[df$Position == "ILB", c("Position")] <- "LB"
+```
+
+
+Finally, I notice that while there is not a variable for those that have gone on to appear in the Pro Football Hall of Fame, the names in the __Player__ variable reflect this honor with the suffix, "HOF". I create a variable based on this fact.
+
+```{r}
+df <- df %>% mutate(HOF = str_detect(Player,"HOF"))
+```
+
+Here is a sample of this data frame as is currently stands.
+
+```{r}
+head(df) %>% knitr::kable()
+```
+
+##Exploration/Visualization
+
+I start out by getting my bearings by seeing the overall drafting tendencies at each position. For the sake of this particular comparison, I group certian positions together:
+ 
+ - Tackles, guards and centers are temporarily grouped back together under "OLine", 
+ - Defensive tackles, nose tackles, and defensive ends are grouped together under "DLine", 
+ - Running backs and full backs are grouped together under "Backs"
+ - Kickers, Punters, and Long Snappers are grouped together under "Special Teams"
+ 
+ The results are illustrated in the graph below. 
+
+```{r, echo=FALSE, fig.height=4}
+df %>% 
+  select(Position) %>% 
+  mutate(Position = fct_collapse(Position,OLine=c("T","G","C"),DLine=c("DE","DT","NT"),Backs=c("RB","FB"),`Special\nTeams`=c("K","P","LS"))) %>% 
+  group_by(Position) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x= reorder(Position,desc(n)), y = n)) +
+  geom_col(width = 0.6, fill="#440044") +
+  geom_text(aes(label=n), vjust=1, nudge_y=-15, color="#EEEEEE", fontface="bold") +
+  #scale_x_continuous(breaks = seq(1:7)) +
+  scale_y_continuous(expand = expand_scale(mult = c(0,0.05))) +
+  labs(title="Number of Players Drafted, by Position", subtitle = "(Since 1994)", x="Position", caption = "Data Source: Pro Football Reference") +
+  theme(plot.subtitle = element_text(size = 11, hjust = 0.5),
+        plot.margin = margin(r=50, l=50),
+        axis.title.x = element_text(size=11, margin = margin(b=1)),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()
+        )
+```
+
+
+It did surprise me that so few special teams specialists seem to be acquired through the draft, to the extent that I was prompted to look at a few other sources to perform a bit of a sanity check. 
+
+
+```{r, fig.height=4, fig.width=8, echo=FALSE}
+df %>% 
+  select(Yr, Round, Pick, Team, Player, Position) %>% 
+  filter(Position == "K" | Position == "P") %>% 
+  ggplot(aes(x= Yr, fill=Position)) +
+  geom_dotplot(method="histodot", binwidth= 1, dotsize = .9, colour="#000000", stackgroups = TRUE) +
+  scale_x_continuous(breaks = 1994:2019) +
+  scale_y_continuous(breaks=seq(0,1,1), expand = expand_scale(mult = c(0,0.0))) +
+  labs(title="Number of Kickers/Punters Drafted, by Year", subtitle = "(Since 1994)", x="Draft Year", caption = "Data Source: Pro Football Reference") +
+  theme(plot.subtitle = element_text(size = 11, hjust = 0.5),
+        axis.title.x  = element_text(size=11, margin = margin(b=1)),
+        axis.text.x   = element_text(size= 9, angle = 45, hjust = 1, vjust = 1),
+        axis.title.y  = element_blank(),
+        axis.line.y   = element_blank(),
+        axis.text.y   = element_blank(),
+        axis.ticks.y  = element_blank(),
+        legend.position = "top")
+```
+
+On the other hand, I was not surprised to see that defensive backs were the most commonly drafted position. Some defensive sets call for five or even six DBs to be on the field at once. Additionally, these players are often some of the fastest athletes available, so they can often contribute quickly in special teams roles. It appears that many teams shift their focus to this position group in the later rounds, presumably as other needs are met. 
+
+```{r, echo=FALSE, fig.height=4, fig.width=5.75}
+df %>% 
+  select(Round, Position) %>% 
+  filter(Position == "DB") %>% 
+  group_by(Round) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x= Round, y = n)) +
+  geom_col(width = 0.6, fill="#440044") +
+  geom_text(aes(label=n), vjust=1, nudge_y=-1, color="#EEEEEE", fontface="bold") +
+  scale_x_continuous(breaks = seq(1:7)) +
+  scale_y_continuous(breaks=seq(0,70,10), expand = expand_scale(mult = c(0,0.05))) +
+  labs(title="Number of DBs Drafted, by Round", subtitle = "(Since 1994)", caption = "Data Source: Pro Football Reference") +
+  theme(plot.subtitle = element_text(size = 11, hjust = 0.5),
+        plot.margin = margin(r=50, l=50),
+        axis.title.x = element_text(size=11, margin = margin(b=1)),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+```
+
+
+Meanwhile the quarterbacks and tackles share similar pattern, with players drafted at these positions predominantly going in the first, sixth, and seventh rounds.  My interpretation of this trend is that since these positions require unique skills and physical abilities, teams are willing to shell out first round money to acquire the best prospects for starting roles. There are likely few individuals in a given year that check all of the boxes, so it is rare for such a player to fall very far (though it obviously happens). So if you are in the market, by round two, you've likely got your man. Interest does not peak again until the later rounds is when teams try to shore up these roles with servicable back ups.
+
+```{r, echo = FALSE,fig.height=3.75}
+df %>% 
+  select(Round, Position) %>% 
+  filter(Position == "QB") %>% 
+  group_by(Round) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x= Round, y = n)) +
+  geom_col(width = 0.6, fill="#440044") +
+  geom_text(aes(label=n), vjust=1, nudge_y=-1, color="#EEEEEE", fontface="bold") +
+  scale_x_continuous(breaks = seq(1:7)) +
+  scale_y_continuous(breaks=seq(0,70,10), expand = expand_scale(mult = c(0,0.05))) +
+  labs(title="Number of Quarterbacks Drafted, by Round", subtitle = "(Since 1994)", caption = "Data Source: Pro Football Reference") +
+  theme(plot.subtitle = element_text(size = 11, hjust = 0.5),
+        plot.margin = margin(r=50, l=50),
+        axis.title.x = element_text(size=11, margin = margin(b=1)),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+  
+```
+
+
+
+```{r, echo = FALSE, fig.height=3.75}
+df %>% 
+  select(Round, Position) %>% 
+  filter(Position == "T") %>% 
+  group_by(Round) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x= Round, y = n)) +
+  geom_col(width = 0.6, fill="#440044") +
+  geom_text(aes(label=n), vjust=1, nudge_y=-1, color="#EEEEEE", fontface="bold") +
+  scale_x_continuous(breaks = seq(1:7)) +
+  scale_y_continuous(breaks=seq(0,100,10), expand = expand_scale(mult = c(0,0.05))) +
+  labs(title="Number of Offensive Tackles Drafted, by Round", subtitle = "(Since 1994)", caption = "Data Source: Pro Football Reference") +
+  theme(plot.subtitle = element_text(size = 11, hjust = 0.5),
+        plot.margin = margin(r=50, l=50),
+        axis.title.x = element_text(size=11, margin = margin(b=1)),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+```
+
+#Conclusion
+
+In this post, I have gathered and cleaned the data set I intend to use to explore the NFL draft. I have also started to explore the data, investigating high-level patterns and trends. This exercise has already been fruitful, however, as it has validated some of my preconsieved notions about broader draft tendencies, but also produced new insight regarding how special teams specialists are acquired.
+
+This is a fine start, but I still have many questions I'd like to investigate. For example, how effective is this process? Is it working? I will look into this and other questions in future posts. 
+
+
+

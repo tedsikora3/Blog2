@@ -1,0 +1,280 @@
+---
+title: 'Playing it by Ear - An Exploration of IMSLP Data: Part One'
+author: Ted Sikora
+date: '2019-06-30'
+slug: first-post
+categories: []
+tags: []
+image:
+  caption: ''
+  focal_point: ''
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(scales)
+library(rvest)
+library(xml2)
+library(ggiraph) 
+```
+
+While trying my hand at some classical guitar music one day, I stumbled across the _IMSLP/Petrucci Music Library_, owned and run by _Project Petrucci LLC_. It seems to be an excellent source for hundreds of thousands of public domain scores and other works. These works are helpfully organized into lists and tables, and I was inspired to explore some of this information. I've pulled from a list of the works of Wolfgang Amadeus Mozart, and created the variable __moz__, a dataframe that contains 766 observations of 8 variables:
+
+```{r, echo=FALSE}
+moz <- read_html("https://imslp.org/wiki/List_of_works_by_Wolfgang_Amadeus_Mozart") %>% html_nodes("table") %>% .[[1]] %>% html_table() 
+```
+
+```{r}
+str(moz)
+```
+
+##Analysis
+
+###Key
+
+The variable that initially interests me is __Key__, however I need to work with it before I can conduct the analysis I have in mind. First off, let's take a look at the unique cases of this variable:
+
+```{r, echo=FALSE}
+unique(moz$Key) %>% sort()
+```
+
+It strikes me that none of the works are written in keys with a sharp tonic. While something may be off with how I had imported the data, after performing a brief sanity check by checking a few other sources I find no blatant exceptions to this. The explanation could lie in some principle of music theory, but perhaps it truely reflects some particularity of Mozart's music. I will update this if I find an explanation, but for the time being I proceed looking into the _Key_ variable as it stands.
+
+At least with my set up, it appears that ggplot has a bit of trouble displaying some of the musical notation. To avoid this and other, potentially more subtle, errors stemming from encoding issues, I replace the flat symbol with a lowercase "b" and, for the sake of completeness in case I want to analyze related data sets, the sharp symbol with "#".
+
+```{r}
+moz <- moz %>% mutate(Key = gsub("\u266d", "b", Key),
+                      Key = gsub("\u266f", "#", Key))
+```
+
+```{r, echo=FALSE}
+unique(moz$Key) %>% sort()
+```
+
+I also want to be able to combine this with other data sets in future posts, and I don't want to take it for granted that spaces and tabs will be used consistently. I convert all characters belonging to the "blank" character class to a single space.
+
+```{r}
+moz <- moz %>% mutate(Key = gsub("[[:blank:]]+", " ", Key))
+```
+
+Finally, since for now __Key__ will be the variable of interest, I also filter out any cases in which this variable is an empty string.
+
+```{r}
+moz <- moz %>% filter(Key != "")
+```
+
+```{r, echo=FALSE}
+str(moz)
+```
+
+Next, there are a few adjustments I would like to make to provide a bit of percpective:
+
+ - First of all, at this point the variable only reflects the keys Mozart used. However, there are 12 major keys and 12 natural minor keys, as well as enharmonic keys. I add in levels for the missing keys, and relabel those levels that have commonly used enharmonic versions to provide some context. In other words I have organized 33 possible labels into 24 levels. 
+
+```{r, echo=FALSE}
+moz <- moz %>% 
+ mutate(
+        Key = str_replace(Key, "C major", "C maj"),
+        Key = str_replace(Key, "A minor", "A min"),
+        
+        Key = str_replace(Key, "G major", "G maj"),
+        Key = str_replace(Key, "E minor", "E min"),
+        
+        Key = str_replace(Key, "D major", "D maj"),
+        Key = str_replace(Key, "B minor", "B min"),
+        
+        Key = str_replace(Key, "A major", "A maj"),
+        Key = str_replace(Key, "F# minor","F# min"),
+        
+        Key = str_replace(Key, "E major", "E maj"),
+        Key = str_replace(Key, "C# minor","C# min"),
+        
+        Key = str_replace(Key, "(B major|Cb major)", "B/Cb maj"),
+        Key = str_replace(Key, "(G# minor|Ab minor)","G#/Ab min"),
+        
+        Key = str_replace(Key, "(Gb major|F# major)", "Gb/F# maj"),
+        Key = str_replace(Key, "(Eb minor|D# minor)","Eb/D# min"),
+        
+        Key = str_replace(Key, "(Db major|C# major)","Db/C# maj"),
+        Key = str_replace(Key, "(Bb minor|A# minor)","Bb/A# min"),
+        
+        Key = str_replace(Key, "Ab major", "Ab maj"),
+        Key = str_replace(Key, "F minor",  "F min"), 
+        
+        Key = str_replace(Key, "Eb major", "Eb maj"),
+        Key = str_replace(Key, "C minor",  "C min"),
+        
+        Key = str_replace(Key, "Bb major", "Bb maj"),
+        Key = str_replace(Key, "G minor",  "G min"),
+        
+        Key = str_replace(Key, "F major",  "F maj"),
+        Key = str_replace(Key, "D minor",  "D min")) %>% 
+        
+        separate(Key, into = c("Tonic","MajMin"), sep = " ", remove = FALSE)
+
+```
+
+
+
+```{r, echo=FALSE}
+musickeys <- c("C maj","A min",
+               "G maj","E min",
+               "D maj","B min",
+               "A maj","F# min",
+               "E maj","C# min", 
+               "B/Cb maj", "G#/Ab min",
+               "Gb/F# maj","Eb/D# min",
+               "Db/C# maj","Bb/A# min",
+               "Ab maj","F min",
+               "Eb maj","C min",
+               "Bb maj","G min",
+               "F maj", "D min")
+moz <- moz %>% mutate(Keys = factor(Key, levels = musickeys, ordered = TRUE))
+```
+
+```{r, echo=FALSE, fig.height=4, fig.width=4.5}
+moz %>% 
+separate(Key, into = c("Tonic","MajMin"), sep = " ", remove = FALSE) %>% 
+mutate(MajMin = recode(MajMin, "maj" = "Major Keys" ,"min" = "Minor Keys")) %>% 
+group_by(Tonic, MajMin) %>%
+summarize(n=n()) %>% 
+ ggplot(aes(x=Tonic, y=n)) +
+  geom_col(fill="darkgreen", width = 0.45 ) +
+  geom_text(aes(label=n, y=n+8), size= 3) +
+  scale_y_continuous(expand = expand_scale(add=c(0,15))) +
+  facet_wrap(~MajMin, ncol = 1) +
+  labs(title = "Mozart's Works, By Key") +
+  theme(
+        plot.title  = element_text(angle = 0, hjust = 0.5, vjust = 1, size = 10, face = "bold"),
+        panel.background = element_rect(fill = "white", color= "black"),
+        panel.grid = element_blank(),
+        axis.ticks = element_blank(),
+        #axis.line.x = element_line(color= "black", fill = "black"),
+        axis.title.y = element_blank(), axis.title.x = element_text(size = 8),
+        axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 1, size = 6),
+        axis.text.y = element_blank(),
+        
+        strip.background = element_rect(fill = "white", color= "black", size = 1.5),
+        strip.text = element_text(face = "bold", size = 8)
+        )
+```
+
+ - Secondly, this variable will be organized alphabetically by the tonic of each key by default. A more common way to organize keys is in the "Circle of Fifths", so I reorder the levels with this in mind. 
+
+```{r, echo=FALSE}
+my_gg <- moz %>% 
+  filter(MajMin == "maj") %>% 
+  mutate(Keys = fct_drop(Keys, only = str_subset(musickeys, "min"))) %>% 
+ggplot(aes(x=Keys)) + 
+  geom_bar_interactive(aes(tooltip=Keys),width=0.1, color= "#990000", fill= "#990000") + 
+  scale_x_discrete(drop = FALSE) +
+  scale_y_continuous(expand = expand_scale(0,0.5)) +
+  coord_polar(start = 6) +
+  labs(title = "Major Keys Utilized by Mozart") +
+  theme(
+    panel.background = element_rect(fill = "#FFFFFF"), 
+    panel.grid.major = element_line("#bbbbbb"),
+    plot.title = element_text(hjust=0.5, face = "bold", size = 10),
+    axis.ticks = element_blank(), 
+    axis.title = element_blank(), 
+    axis.text.x = element_text(size = 9, face = "bold", color = "#999900"),
+    axis.text.y =  element_blank())
+
+girafe(code = print(my_gg) )
+```
+
+
+<br>
+
+The keys towards the top of this circle have the fewer sharp/flat notes. It appears that Mozart favored these keys, though there are notable exceptions:
+ 
+ - He utilized _G major_, which only has one sharp notes, to a lesser extent, and 
+ - He used _Eb major_, which has three flat notes, quite often. 
+ 
+These exceptions aside, it would seem that despite Mozart's virtuosity, he refrained from the use of the most esoteric keys for the tonal center of his works. That being said, this analysis is relatively superficial, given that modulation between keys within a given piece was common. In fact, modualtion between keys was a defining feature of some of the more popular musical genres of Mozart's day. Entire movements of some of his works could have been written in obscure keys, but this would not be reflected in this data set. 
+
+This makes me curious about the extent to which Mozart's preference for certian key's was dependent on the genre of a given work.
+
+```{r, fig.width=12.5, fig.height= 2.7, echo=FALSE}
+moz %>% 
+ filter(MajMin == "maj") %>%  
+  mutate(Genre = fct_infreq(Genre)) %>% 
+ggplot() + 
+geom_dotplot(aes(x=fct_rev(fct_infreq(Tonic)), fill=Genre), color="grey10",method = "histodot", drop = FALSE, binwidth= 1/18, dotsize = 4.5, binaxis = "x", stackdir = "up", stackgroups = TRUE) + 
+scale_y_continuous(NULL, breaks = 1:9, expand = expand_scale(add=c(0,0)), limits = c(0,10)) +
+ coord_flip() +
+  labs(title = "Mozart's Works in Major",  x=NULL, fill = "Genre") + #subtitle = "By key and genre",
+  guides(fill=FALSE) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 10, hjust = 0.5),#plot.background = element_rect(fill = "grey70"),
+   # plot.margin = margin(2,0,3.2,0.1, "cm"),
+    panel.grid.major.x = element_blank(), 
+    panel.grid.major.y = element_blank(), 
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    #panel.background = element_rect(fill = "grey10"),
+   # legend.position = "right",# c(.89,.31),
+    #legend.direction = "vertical",  # "horizontal", vertical
+    # legend.margin = margin(0,0.1,0,0, "cm"), #legend.background = element_rect(fill = "grey60"), 
+    # legend.key = element_rect(fill = "grey10"),
+    # legend.key.size = unit(c(.4), "cm"), #legend.key.height, legend.key.width, 
+    # legend.text.align = 0, 
+    # legend.title.align= 0.5, 
+    # legend.text =  element_text(size = 8, face = NULL, color = "#222222"),
+    # legend.title = element_text(size = 9, face = "bold", color = "#222222"),
+    axis.ticks = element_blank(),
+    axis.text.y =  element_text(size = 8.1, face = "bold", color = "#222222", angle = 0),
+    axis.title.y = element_text(size = 8, face = "bold", color = "#222222"),
+    axis.text.x =  element_blank()) + facet_wrap(~Genre, nrow = 1)
+```
+
+In C major, Mozart appears to have worked relatively evenly across genres. Meanwhile, D major seems to have been his prefered key for orchestral works. The lone "Stage" piece in a major key also is composed in D major. 
+
+###Instrumentation
+
+ISMLP helpfully provides a variable indicating the _Forces_, that is the instrumentation of each of Mozarts works. The codes used to indicate various arrangements can be found [here](https://imslp.org/wiki/IMSLP:Abbreviations_for_Instruments). It is evident that while he had a distinct preference for certian arrangements (solo piano and orchestra), he also experiemented a great deal with the number and types of instruments/voices.
+
+```{r, fig.height=12, width= 5, echo=FALSE}
+moz$Forces[moz$Forces != ""] %>% 
+  str_replace(pattern = "Piano", replacement = "pf") %>% 
+  fct_count() %>% 
+  arrange(n) %>% 
+  mutate(f = fct_inorder(f), f = fct_lump(f) ) %>% 
+  ggplot(aes(x=f, y=n)) + 
+  geom_col(fill = "darkgreen") +
+  scale_x_discrete(NULL,  expand = expand_scale(add=c(0,0))) +
+  scale_y_continuous(NULL,  expand = expand_scale(mult=c(0,0.06))) +
+  coord_flip() +
+  labs(title = "Mozart's Works, Instrumentation/Forces", x=NULL) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),#plot.background = element_rect(fill = "grey70"),
+    plot.margin = margin(0.5,4,0,1, "cm"),
+    panel.grid.major.x = element_blank(), 
+    panel.grid.major.y = element_blank(), 
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.background = element_rect(fill = "white"),
+    legend.position = "top",# c(.89,.31),
+    legend.direction = "horizontal",  # "horizontal", vertical
+    legend.margin = margin(0,0.1,0,0, "cm"), #legend.background = element_rect(fill = "grey60"), 
+    legend.key = element_rect(fill = "grey10"),
+    legend.key.size = unit(c(.4), "cm"), #legend.key.height, legend.key.width, 
+    legend.text.align = 0, 
+    legend.title.align= 0.5, 
+    legend.text =  element_text(size = 8, face = NULL, color = "#222222"),
+    legend.title = element_text(size = 9, face = "bold", color = "#222222"),
+    axis.ticks = element_blank(),
+    axis.line.y =  element_blank(),
+    axis.text.y =  element_text(size = 8.1, face = "bold", color = "#222222", angle = 0),
+    axis.title.y = element_text(size = 8, face = "bold", color = "#222222"),
+    axis.text.x =  element_blank())
+```
+
+
+
+
+
+
+
